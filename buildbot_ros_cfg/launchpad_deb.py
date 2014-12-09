@@ -51,7 +51,7 @@ def launchpad_debbuild(c, package, version, binaries, url, distro, arch, machine
         ShellCommand(
             haltOnFailure = True,
             name = package+'-build',
-            command = ['sudo', 'cowbuilder',
+            command = ['cowbuilder',
                        '--build', package+'_'+version+'.dsc',
                        '--distribution', distro, '--architecture', arch,
                        '--basepath', '/var/cache/pbuilder/base-'+distro+'-'+arch+'.cow',
@@ -59,6 +59,7 @@ def launchpad_debbuild(c, package, version, binaries, url, distro, arch, machine
                        '--hookdir', Interpolate('%(prop:workdir)s/hooks'),
                        '--othermirror', othermirror,
                        '--override-config'],
+            env = {'DIST': distro},
             descriptionDone = ['built binary debs', ]
         )
     )

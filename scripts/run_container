@@ -1,0 +1,56 @@
+#!/bin/bash
+
+export MASTER=/buildbot-ros
+export KEYS=${MASTER}/keys
+
+# Set up SSH key, if present (used for accessing private source repos).
+if [ -e "${KEYS}/ssh" ]
+then
+  cp -R ${KEYS}/ssh /root/.ssh
+  chmod -f 600 /root/.ssh/id_rsa || true
+fi
+
+# Set up GPG key, if present (used for signing debs).
+if [ -e "${KEYS}/signing/private.key" ]
+then
+  gpg --import ${KEYS}/signing/public.key
+  gpg --allow-secret-key-import --import ${KEYS}/signing/private.key
+  export SIGNING_KEY_ID=$(gpg --with-colon ${KEYS}/signing/public.key | grep sub | cut -d: -f5)
+fi
+
+# Initialize apt repo, if necessary.
+if [ ! -e "${REPO_DIR}/ubuntu" ]
+then
+  mkdir -p ${REPO_DIR}/ubuntu/conf
+  python -m em -F ${MASTER}/conf/distros.py -o ${REPO_DIR}/ubuntu/conf/distributions \
+    ${MASTER}/templates/apt-distributions.em
+  reprepro -b ${REPO_DIR}/ubuntu export
+fi
+
+# Start the Nginx webserver (port 80).
+nginx -c ${MASTER}/conf/nginx.conf
+
+# Generate passwords and create the buildslaves.
+for i in $(seq 1 ${NUM_BUILDSLAVES})
+do
+  BUILDSLAVE_NAME="rosbuilder${i}"
+  BUILDSLAVE_PASS=$(openssl rand -base64 24)
+  echo "${BUILDSLAVE_NAME} ${BUILDSLAVE_PASS}" >> ${MASTER}/slaves
+  echo "Running: buildslave create-slave --umask 0022 /${BUILDSLAVE_NAME} localhost:9989 ${BUILDSLAVE_NAME} ${BUILDSLAVE_PASS}"
+  buildslave create-slave --umask 0022 /${BUILDSLAVE_NAME} localhost:9989 ${BUILDSLAVE_NAME} ${BUILDSLAVE_PASS}
+done
+
+# Create and start Buildbot master (port 8010).
+buildbot create-master --db="sqlite:///${REPO_DIR}/buildbot.sqlite" ${MASTER}
+sed -i 's/umask = None/umask = 0022/' ${MASTER}/buildbot.tac
+buildbot start ${MASTER}
+
+# Start the buildslaves.
+for i in $(seq 1 ${NUM_BUILDSLAVES})
+do
+  buildslave start /rosbuilder${i}
+done
+
+while true; do
+  sleep 600
+done

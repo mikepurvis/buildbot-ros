@@ -66,12 +66,13 @@ def ros_docbuild(c, job_name, url, branch, distro, arch, rosdistro, machines, ot
         ShellCommand(
             haltOnFailure = True,
             name = job_name+'-docbuild',
-            command = ['sudo', 'cowbuilder', '--execute', Interpolate('%(prop:workdir)s/docbuild.py'),
+            command = ['cowbuilder', '--execute', Interpolate('%(prop:workdir)s/docbuild.py'),
                        '--distribution', distro, '--architecture', arch,
                        '--bindmounts', binddir,
                        '--basepath', '/var/cache/pbuilder/base-'+distro+'-'+arch+'.cow',
                        '--override-config', '--othermirror', othermirror,
                        '--', binddir, rosdistro],
+            env = {'DIST': distro},
             descriptionDone = ['built docs', ]
         )
     )

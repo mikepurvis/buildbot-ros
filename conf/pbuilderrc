@@ -1,0 +1,4 @@
+# This configuration is essential in order for pbuilder/cowbuilder
+# to correctly build for a distro other than that of the host (for
+# example, to build precise debs on a trusty buildslave).
+DISTRIBUTION="$DIST"

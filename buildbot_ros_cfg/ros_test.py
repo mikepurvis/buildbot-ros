@@ -115,13 +115,14 @@ def ros_testbuild(c, job_name, url, branch, distro, arch, rosdistro, machines, o
     f.addStep(
         TestBuild(
             name = job_name+'-build',
-            command = ['sudo', 'cowbuilder', '--execute', Interpolate('%(prop:workdir)s/testbuild.py'),
+            command = ['cowbuilder', '--execute', Interpolate('%(prop:workdir)s/testbuild.py'),
                        '--distribution', distro, '--architecture', arch,
                        '--bindmounts', binddir,
                        '--basepath', '/var/cache/pbuilder/base-'+distro+'-'+arch+'.cow',
                        '--override-config', '--othermirror', othermirror,
                        '--', binddir, rosdistro],
             logfiles = {'tests' : binddir+'/testresults' },
+            env = {'DIST': distro},
             descriptionDone = ['make and test', job_name]
         )
     )
