@@ -69,7 +69,7 @@ def defaultmirrors(distro):
 def getKeyCommands(keys):
     if len(keys) == 0:
         return ""
-    return '\n'.join(['wget '+key+' -O- | apt-key add -' for key in keys])+'\n'
+    return '\n'.join(['wget --no-check-certificate -O- "'+key+'" | apt-key add -' for key in keys])+'\n'
 
 ## @brief Make a cowbuilder, if one does not exist
 ## @param distro The UBUNTU distribution (for instance, 'precise')
