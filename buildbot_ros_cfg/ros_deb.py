@@ -26,7 +26,7 @@ from helpers import success
 ## @param trigger_pkgs List of packages names to trigger after our build is done.
 def ros_debbuild(c, job_name, packages, url, distro, arch, rosdistro, version, machines, othermirror, keys, trigger_pkgs = None):
     gbp_args = ['-uc', '-us', '--git-ignore-branch', '--git-ignore-new',
-                '--git-verbose', '--git-dist='+distro, '--git-arch='+arch]
+                '--git-verbose', '--git-dist='+distro, '--git-arch='+arch, '-j4']
     f = BuildFactory()
     # Remove the build directory.
     f.addStep(
