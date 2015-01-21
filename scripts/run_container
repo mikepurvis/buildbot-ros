@@ -1,7 +1,8 @@
 #!/bin/bash
 
-export MASTER=/buildbot-ros
-export KEYS=${MASTER}/keys
+export MASTER_SRC=/buildbot-ros
+export MASTER=/master
+export KEYS=${MASTER_SRC}/keys
 
 # Set up SSH key, if present (used for accessing private source repos).
 if [ -e "${KEYS}/ssh" ]
@@ -22,13 +23,13 @@ fi
 if [ ! -e "${REPO_DIR}/ubuntu" ]
 then
   mkdir -p ${REPO_DIR}/ubuntu/conf
-  python -m em -F ${MASTER}/conf/distros.py -o ${REPO_DIR}/ubuntu/conf/distributions \
-    ${MASTER}/templates/apt-distributions.em
+  python -m em -F ${MASTER_SRC}/conf/distros.py -o ${REPO_DIR}/ubuntu/conf/distributions \
+    ${MASTER_SRC}/templates/apt-distributions.em
   reprepro -b ${REPO_DIR}/ubuntu export
 fi
 
 # Start the Nginx webserver (port 80).
-nginx -c ${MASTER}/conf/nginx.conf
+nginx -c ${MASTER_SRC}/conf/nginx.conf
 
 # Generate passwords and create the buildslaves.
 for i in $(seq 1 ${NUM_BUILDSLAVES})
@@ -40,9 +41,14 @@ do
   buildslave create-slave --umask 0022 /${BUILDSLAVE_NAME} localhost:9989 ${BUILDSLAVE_NAME} ${BUILDSLAVE_PASS}
 done
 
-# Create and start Buildbot master (port 8010).
-buildbot create-master --db="sqlite:///${REPO_DIR}/buildbot.sqlite" ${MASTER}
-sed -i 's/umask = None/umask = 0022/' ${MASTER}/buildbot.tac
+# If the master exists, update it. If it doesn't, create it.
+if [ -e "${MASTER}/twistd.tac" ]; then
+else
+  buildbot create-master --db="sqlite:///${REPO_DIR}/buildbot.sqlite" ${MASTER}
+  sed -i 's/umask = None/umask = 0022/' ${MASTER}/buildbot.tac
+fi
+
+# Start the master.
 buildbot start ${MASTER}
 
 # Start the buildslaves.
